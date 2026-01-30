@@ -15,7 +15,6 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-//@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final CustomUtilisateurService customUtilisateurService;
@@ -40,22 +39,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(
-                                "/swagger-ui.html",
-                                "/swagger-ui/**",
-                                "/api-docs/**",
-                                "/v3/api-docs/**",
-                                "/webjars/**"
-                        ).permitAll()
-                        //.requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/**").hasAnyAuthority("ADMIN")
-                        .anyRequest().authenticated()
-                )
-                .addFilterBefore(new JwtFilter(customUtilisateurService, jwtUtil), org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
-
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -> auth
+                .anyRequest().permitAll() // Tout le monde peut accéder à toutes les routes
+            );
+        
         return http.build();
     }
 }
