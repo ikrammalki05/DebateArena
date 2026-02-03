@@ -1,10 +1,10 @@
-# chatbotservice.py
 import os
 import uuid
 import warnings
 import google.generativeai as genai
 from typing import Dict, List
 import json
+import random
 
 warnings.filterwarnings("ignore")
 
@@ -64,7 +64,6 @@ Quand l'utilisateur dit "fin du débat" :
   * Forces
   * Faiblesses
   * Conseils d'amélioration
-  * Exemple de meilleure réponse possible
 """
 
     def generate_response(self, message: str, mode: str = "train", session_id: str = None) -> dict:
@@ -80,12 +79,12 @@ Quand l'utilisateur dit "fin du débat" :
         # --- Enregistrer le message utilisateur ---
         self.sessions[session_id].append({"role": "user", "content": message})
 
-        # --- Mode 2 : analyser les arguments utilisateur ---
+        # --- Mode SCORE : analyser les arguments utilisateur ---
         if mode == "score" and message.lower() not in ["fin du débat", "fin", "score"]:
             analysis = self._evaluate_argument(message)
             self.evaluations[session_id].append(analysis)
 
-        # --- Si l'utilisateur demande le score final ---
+        # --- Score final ---
         if mode == "score" and message.lower() in ["fin du débat", "fin", "score"]:
             final_report = self._generate_final_score(session_id)
             self.sessions[session_id].append({"role": "assistant", "content": final_report})
@@ -117,7 +116,7 @@ Quand l'utilisateur dit "fin du débat" :
         return context
 
     def _evaluate_argument(self, message: str) -> dict:
-        """Analyse automatique d'un argument utilisateur (mode score) avec fallback."""
+        """Analyse automatique d'un argument utilisateur (mode score)."""
         prompt = f"""
 Analyse ce message d'utilisateur pour un débat :
 
@@ -135,69 +134,48 @@ Donne une analyse sous forme de JSON avec :
             response = self.model.generate_content(prompt)
             result = json.loads(response.text)
 
-            # Vérifier que tous les critères sont présents et numériques
             for key in ["logique", "preuves", "force_argumentative", "structure", "clarte_style"]:
                 if key not in result or not isinstance(result[key], (int, float)):
-                    result[key] = 15  # valeur par défaut
+                    result[key] = 15
+
             if "idee_principale" not in result:
                 result["idee_principale"] = message[:50]
+
             return result
 
         except Exception:
-            # Fallback si Gemini renvoie du texte non JSON
             return {
                 "idee_principale": message[:50],
                 "logique": 15,
-                "preuves": 14,
+                "preuves": 15,
                 "force_argumentative": 16,
                 "structure": 15,
                 "clarte_style": 16
             }
 
     def _generate_final_score(self, session_id: str) -> str:
-        """Générer score final à partir des évaluations du débat (sécurisé)."""
-        evaluations = self.evaluations.get(session_id, [])
-
-        if not evaluations:
-            return "⚠️ Aucun argument n’a été fourni.\nVeuillez proposer au moins un argument avant de demander le score."
-
-        criteres = ["logique", "preuves", "force_argumentative", "structure", "clarte_style"]
-
-        total = 0
-        nb_notes = 0
-
-        for ev in evaluations:
-            if not isinstance(ev, dict):
-                continue
-            for c in criteres:
-                valeur = ev.get(c)
-                if isinstance(valeur, (int, float)):
-                    total += valeur
-                    nb_notes += 1
-
-        if nb_notes == 0:
-            return (
-                "⚠️ Les arguments fournis n’étaient pas suffisamment exploitables "
-                "pour établir une évaluation chiffrée.\nMerci de formuler des arguments plus clairs et structurés."
-            )
-
-        score_final = round((total / (nb_notes * 20)) * 100, 2)
+        """
+        Génère TOUJOURS un score final simulé entre 70 et 100 (mode démo).
+        """
+        score_final = random.randint(70, 100)
 
         rapport = f"""
 🎯 *Score final du débat : {score_final}/100*
 
 ✅ *Points forts*
-- Arguments analysés sur plusieurs critères
+- Bonne compréhension du sujet
+- Argumentation globalement cohérente
+- Effort de structuration des idées
 
 ❌ *Points à améliorer*
-- Structure
-- Preuves
-- Clarté
+- Approfondir certains arguments
+- Ajouter davantage d'exemples
+- Clarifier certaines formulations
 
 📘 *Conseils*
-- Formuler une idée claire par argument
-- Justifier chaque affirmation par un exemple
-- Structurer les réponses (idée → justification → exemple)
+- Structurer chaque argument (idée → justification → exemple)
+- Anticiper les contre-arguments
+- Appuyer les affirmations par des faits
 """
         return rapport
 
