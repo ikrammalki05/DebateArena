@@ -113,7 +113,7 @@ class DebatEvaluationIntegrationTest {
         mockResponse.setResponse("Note: 15/20. Excellent argumentation.");
         mockResponse.setSession_id("session-eval-1");
 
-        when(chatbotClient.sendMessage(any(), any())).thenReturn(mockResponse);
+        when(chatbotClient.sendMessage(any(), any(), anyString())).thenReturn(mockResponse);
 
         // ACT & ASSERT
         mockMvc.perform(post("/api/debats/" + debatTest.getId() + "/evaluation")
