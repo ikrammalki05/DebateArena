@@ -109,7 +109,7 @@ class DebatConversationIntegrationTest {
         mockResponse.setSession_id("session-123");
 
         // 3. On mocke l'envoi du message (avec any() pour être plus large sur les arguments)
-        when(chatbotClient.sendMessage(any(), any())).thenReturn(mockResponse);
+        when(chatbotClient.sendMessage(any(), any(), any())).thenReturn(mockResponse);
 
         // Requête de l'utilisateur
         MessageRequest userMessage = new MessageRequest();
