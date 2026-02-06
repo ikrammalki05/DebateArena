@@ -22,12 +22,25 @@ public class ChatbotRequest {
     @NotBlank(message = "L'ID de session est requis")
     private String session_id;
 
-    public ChatbotRequest() {
-    }
+    @Schema(
+            description = "Mode de conversation ou type de traitement demandé au chatbot",
+            example = "score",
+            requiredMode = Schema.RequiredMode.NOT_REQUIRED
+    )
+    private String mode;  // <-- Ajout du champ mode
+
+    // Constructeurs
+    public ChatbotRequest() {}
 
     public ChatbotRequest(String message, String session_id) {
         this.message = message;
         this.session_id = session_id;
+    }
+
+    public ChatbotRequest(String message, String session_id, String mode) {
+        this.message = message;
+        this.session_id = session_id;
+        this.mode = mode;
     }
 
     // Getters et Setters
@@ -36,4 +49,7 @@ public class ChatbotRequest {
 
     public String getSession_id() { return session_id; }
     public void setSession_id(String session_id) { this.session_id = session_id; }
+
+    public String getMode() { return mode; }
+    public void setMode(String mode) { this.mode = mode; }
 }
