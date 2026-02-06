@@ -7,7 +7,7 @@ RUN mvn dependency:go-offline
 COPY backend/src ./src
 
 # Build du projet (sans exécuter les tests ici)
-RUN mvn -DskipTests package
+RUN mvn -DskipTests package -e -X
 
 FROM eclipse-temurin:17-jdk-jammy
 WORKDIR /app
