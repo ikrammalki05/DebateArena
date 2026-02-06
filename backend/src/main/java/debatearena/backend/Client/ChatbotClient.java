@@ -1,70 +1,64 @@
-package debatearena.backend.Client;
+package com.debatearena.backend.client;
 
-import debatearena.backend.DTO.ChatbotRequest;
-import debatearena.backend.DTO.ChatbotResponse;
-import debatearena.backend.DTO.ChatbotHealthResponse;
-import debatearena.backend.Exceptions.ChatbotServiceException;
+import com.debatearena.backend.dto.ChatbotRequest;
+import com.debatearena.backend.dto.ChatbotResponse;
+import com.debatearena.backend.exception.ChatbotServiceException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import java.time.Duration;
 
 @Component
 public class ChatbotClient {
 
     private final RestTemplate restTemplate;
-    private final String baseUrl;
 
-    public ChatbotClient(RestTemplateBuilder restTemplateBuilder,
-                         @Value("${app.chatbot.base-url:http://chatbot:5005}") String baseUrl) {
-        this.baseUrl = baseUrl;
-        this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(Duration.ofSeconds(5))
-                .setReadTimeout(Duration.ofSeconds(30))
-                .build();
+    @Value("${chatbot.api.base-url}")
+    private String baseUrl;
+
+    public ChatbotClient(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
-    public boolean isHealthy() {
+    /**
+     * Méthode principale : envoie un message au chatbot avec mode + sessionId
+     */
+    public ChatbotResponse sendMessage(String message, String sessionId, String mode) {
         try {
-            String url = baseUrl + "/health";
-            ResponseEntity<ChatbotHealthResponse> response = restTemplate.getForEntity(
-                    url,
-                    ChatbotHealthResponse.class
-            );
-
-            if (response.getBody() != null) {
-                return "healthy".equals(response.getBody().getStatus());
+            if (message == null || message.trim().isEmpty()) {
+                throw new ChatbotServiceException("Message vide ou null envoyé au chatbot");
             }
-            return false;
 
-        } catch (Exception e) {
-            return false;
-        }
-    }
+            if (sessionId == null || sessionId.trim().isEmpty()) {
+                sessionId = "default-session";
+            }
 
-    public ChatbotResponse sendMessage(String message, String sessionId) {
-        try {
+            if (mode == null || mode.trim().isEmpty()) {
+                mode = "train"; // mode par défaut (tu peux mettre "score" ou "chat")
+            }
+
             String url = baseUrl + "/chat";
 
             ChatbotRequest request = new ChatbotRequest();
             request.setMessage(message);
             request.setSession_id(sessionId);
+            request.setMode(mode);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+
             HttpEntity<ChatbotRequest> entity = new HttpEntity<>(request, headers);
 
-            ResponseEntity<ChatbotResponse> response = restTemplate.postForEntity(
+            ResponseEntity<ChatbotResponse> response = restTemplate.exchange(
                     url,
+                    HttpMethod.POST,
                     entity,
                     ChatbotResponse.class
             );
+
+            if (response.getStatusCode() != HttpStatus.OK) {
+                throw new ChatbotServiceException("Erreur chatbot HTTP: " + response.getStatusCode());
+            }
 
             if (response.getBody() == null) {
                 throw new ChatbotServiceException("Réponse vide du chatbot");
@@ -72,17 +66,24 @@ public class ChatbotClient {
 
             return response.getBody();
 
+        } catch (ChatbotServiceException e) {
+            throw e;
         } catch (Exception e) {
             throw new ChatbotServiceException("Erreur lors de l'appel au chatbot: " + e.getMessage());
         }
     }
 
-    public void clearSession(String sessionId) {
-        try {
-            String url = baseUrl + "/chat/" + sessionId;
-            restTemplate.delete(url);
-        } catch (Exception e) {
-            // Ignorer les erreurs de nettoyage
-        }
+    /**
+     * Surcharge : si on appelle seulement avec message + sessionId
+     */
+    public ChatbotResponse sendMessage(String message, String sessionId) {
+        return sendMessage(message, sessionId, "train");
+    }
+
+    /**
+     * Surcharge : si on appelle seulement avec message
+     */
+    public ChatbotResponse sendMessage(String message) {
+        return sendMessage(message, "default-session", "train");
     }
 }
