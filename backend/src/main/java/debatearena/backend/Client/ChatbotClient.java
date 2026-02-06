@@ -1,42 +1,48 @@
-package com.debatearena.backend.client;
+package debatearena.backend.Client;
 
-import com.debatearena.backend.dto.ChatbotRequest;
-import com.debatearena.backend.dto.ChatbotResponse;
-import com.debatearena.backend.exception.ChatbotServiceException;
+import debatearena.backend.DTO.ChatbotRequest;
+import debatearena.backend.DTO.ChatbotResponse;
+import debatearena.backend.DTO.ChatbotHealthResponse;
+import debatearena.backend.Exceptions.ChatbotServiceException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+
+import java.time.Duration;
 
 @Component
 public class ChatbotClient {
 
     private final RestTemplate restTemplate;
+    private final String baseUrl;
 
-    @Value("${chatbot.api.base-url}")
-    private String baseUrl;
-
-    public ChatbotClient(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public ChatbotClient(RestTemplateBuilder restTemplateBuilder,
+                         @Value("${app.chatbot.base-url:http://chatbot:5005}") String baseUrl) {
+        this.baseUrl = baseUrl;
+        this.restTemplate = restTemplateBuilder
+                .setConnectTimeout(Duration.ofSeconds(5))
+                .setReadTimeout(Duration.ofSeconds(30))
+                .build();
     }
 
-    /**
-     * Méthode principale : envoie un message au chatbot avec mode + sessionId
-     */
+    public boolean isHealthy() {
+        try {
+            String url = baseUrl + "/health";
+            ResponseEntity<ChatbotHealthResponse> response =
+                    restTemplate.getForEntity(url, ChatbotHealthResponse.class);
+
+            return response.getBody() != null &&
+                    "healthy".equalsIgnoreCase(response.getBody().getStatus());
+
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public ChatbotResponse sendMessage(String message, String sessionId, String mode) {
         try {
-            if (message == null || message.trim().isEmpty()) {
-                throw new ChatbotServiceException("Message vide ou null envoyé au chatbot");
-            }
-
-            if (sessionId == null || sessionId.trim().isEmpty()) {
-                sessionId = "default-session";
-            }
-
-            if (mode == null || mode.trim().isEmpty()) {
-                mode = "train"; // mode par défaut (tu peux mettre "score" ou "chat")
-            }
-
             String url = baseUrl + "/chat";
 
             ChatbotRequest request = new ChatbotRequest();
@@ -56,34 +62,26 @@ public class ChatbotClient {
                     ChatbotResponse.class
             );
 
-            if (response.getStatusCode() != HttpStatus.OK) {
-                throw new ChatbotServiceException("Erreur chatbot HTTP: " + response.getStatusCode());
-            }
-
             if (response.getBody() == null) {
                 throw new ChatbotServiceException("Réponse vide du chatbot");
             }
 
             return response.getBody();
 
-        } catch (ChatbotServiceException e) {
-            throw e;
         } catch (Exception e) {
-            throw new ChatbotServiceException("Erreur lors de l'appel au chatbot: " + e.getMessage());
+            throw new ChatbotServiceException("Erreur appel chatbot: " + e.getMessage());
         }
     }
 
-    /**
-     * Surcharge : si on appelle seulement avec message + sessionId
-     */
-    public ChatbotResponse sendMessage(String message, String sessionId) {
-        return sendMessage(message, sessionId, "train");
-    }
+    public void clearSession(String sessionId) {
+        try {
+            if (sessionId == null) return;
 
-    /**
-     * Surcharge : si on appelle seulement avec message
-     */
-    public ChatbotResponse sendMessage(String message) {
-        return sendMessage(message, "default-session", "train");
+            String url = baseUrl + "/chat/" + sessionId;
+            restTemplate.delete(url);
+
+        } catch (Exception e) {
+            // ignore
+        }
     }
 }
