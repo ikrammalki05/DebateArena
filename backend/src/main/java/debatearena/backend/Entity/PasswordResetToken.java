@@ -1,28 +1,27 @@
 package debatearena.backend.Entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
+@Table(name = "PasswordResetToken")
 public class PasswordResetToken {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @OneToOne
     private Utilisateur utilisateur;
 
-    private LocalDateTime expiryDate;
+    private String token;
 
-    // getter pour utilisateur
-    public Utilisateur getUtilisateur() { return utilisateur; }
-    public void setUtilisateur(Utilisateur utilisateur) { this.utilisateur = utilisateur; }
-
-    // getter pour expiryDate
-    public LocalDateTime getExpiryDate() { return expiryDate; }
-    public void setExpiryDate(LocalDateTime expiryDate) { this.expiryDate = expiryDate; }
-
-    // méthode utilitaire
-    public boolean isExpired() { return expiryDate.isBefore(LocalDateTime.now()); }
+    private LocalDateTime expiration;
 }
