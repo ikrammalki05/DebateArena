@@ -1,20 +1,23 @@
 package debatearena.backend.Entity;
 
 import jakarta.persistence.*;
+import lombok.*;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
+@Table(name = "test")
 public class Test {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Integer note;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_debat", nullable = false)
+    private Debat debat;
 
-    // getters et setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public Integer getNote() { return note; }
-    public void setNote(Integer note) { this.note = note; }
+    @Column(name = "note")
+    private Integer note; // 0-20
 }
