@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "test")
+@Table(name = "tests")
 public class Test {
 
     @Id
@@ -15,9 +15,9 @@ public class Test {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_debat", nullable = false)
+    @JoinColumn(name = "debat_id", nullable = false)
     private Debat debat;
 
     @Column(name = "note")
-    private Integer note; // 0-20
+    private Integer note; // 0-100
 }
