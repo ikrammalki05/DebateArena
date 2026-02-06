@@ -1,6 +1,6 @@
 # DebatArena
 
-Projet d'application de débat avec évaluation automatique.
+Projet d'une application mobile de débat avec évaluation automatique.
 
 ## Structure
 
