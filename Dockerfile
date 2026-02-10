@@ -5,11 +5,11 @@ FROM maven:3.9.6-eclipse-temurin-17 AS build
 
 WORKDIR /workspace
 
-# Copier tout le projet backend
+# Copier le projet backend
 COPY backend/ .
 
-# Compiler le projet en ignorant COMPLETEMENT les tests
-RUN mvn clean package -Dmaven.test.skip=true
+# Build sans tests
+RUN mvn clean package -DskipTests
 
 
 # ============================
@@ -19,11 +19,11 @@ FROM eclipse-temurin:17-jdk-jammy
 
 WORKDIR /app
 
-# Copier le jar généré depuis l'étape build
+# Copier le jar généré
 COPY --from=build /workspace/target/*.jar app.jar
 
-# Port Spring Boot
+# Railway fournit le port via $PORT
 EXPOSE 8080
 
-# Lancer l'application
+# Lancer Spring Boot
 ENTRYPOINT ["java", "-jar", "app.jar"]
